@@ -1,0 +1,270 @@
+ActivityMain(xml):
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:orientation="vertical"
+    android:background="#E53935"
+    tools:context="cloud.artik.example.hellocloud.LoginActivity" >
+
+    <TextView
+        android:id="@+id/hello_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textSize="25sp"
+        android:padding="20sp"
+        android:text="@string/hello_world" />
+
+     <Button
+        android:id="@+id/btn"
+         android:layout_gravity="center"
+        android:layout_width="300sp"
+         android:padding="15sp"
+         android:textSize="20sp"
+         android:background="#FFEBEE"
+        android:layout_height="wrap_content"
+        android:text="@string/click" />
+
+</LinearLayout>
+
+Message Activity(xml):
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:background="#E53935"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/welcome"
+        android:textSize="30sp"
+        android:gravity="center"
+        android:padding="10dp"
+        android:textColor="#000000"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/welcome_txt" />
+
+
+
+    <Button
+        android:id="@+id/send_btn"
+        android:gravity="center"
+        android:layout_width="300sp"
+        android:layout_height="wrap_content"
+        android:text="@string/send_btn_txt" />
+
+    <Button
+        android:id="@+id/send_btn_off"
+        android:layout_width="300sp"
+        android:layout_height="wrap_content"
+        android:text="@string/send_btn_txt_off" />
+
+
+    <TextView
+        android:id="@+id/sendmsg_response"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sendmsg_response"
+        android:textColor="#FFFFFF"
+        android:paddingTop="10sp"
+        android:paddingBottom="30sp"/>
+
+    <Button
+        android:id="@+id/getlatest_btn"
+        android:layout_width="wrap_content"
+        android:gravity="center"
+        android:layout_height="wrap_content"
+        android:text="@string/getlatest_btn_txt" />
+
+    <TextView
+        android:id="@+id/getlatest_response_mid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:paddingTop="10sp"
+        android:paddingLeft="10sp"
+        android:text="@string/getlatest_response_mid" />
+
+    <TextView
+        android:id="@+id/getlatest_response_mdata"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:paddingTop="10sp"
+        android:paddingLeft="10sp"
+        android:text="@string/getlatest_response_mdata" />
+</LinearLayout>
+
+
+Login Activity(java):
+
+
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.customtabs.CustomTabsIntent;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
+
+import net.openid.appauth.AuthState;
+import net.openid.appauth.AuthorizationException;
+import net.openid.appauth.AuthorizationRequest;
+import net.openid.appauth.AuthorizationResponse;
+import net.openid.appauth.AuthorizationService;
+import net.openid.appauth.TokenResponse;
+
+import static cloud.artik.example.hellocloud.AuthHelper.INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE;
+import static cloud.artik.example.hellocloud.AuthHelper.USED_INTENT;
+
+public class LoginActivity extends Activity {
+    static final String TAG = "LoginActivity";
+
+    AuthorizationService mAuthorizationService;
+    AuthStateDAL mAuthStateDAL;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        Log.v(TAG, "::onCreate");
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
+        Button button = (Button)findViewById(R.id.btn);
+
+        mAuthorizationService = new AuthorizationService(this);
+        mAuthStateDAL = new AuthStateDAL(this);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                try {
+                    Log.v(TAG, ": button is clicked.");
+                    doAuth();
+                } catch (Exception e) {
+                    Log.v(TAG, "Run into Exception");
+                    e.printStackTrace();
+                }
+            }
+        });
+
+    }
+
+    
+    private void doAuth() {
+        AuthorizationRequest authorizationRequest = AuthHelper.createAuthorizationRequest();
+
+        PendingIntent authorizationIntent = PendingIntent.getActivity(
+                this,
+                authorizationRequest.hashCode(),
+                new Intent(INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE, null, this, LoginActivity.class),
+                0);
+
+        /* request sample with custom tabs */
+        CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+        CustomTabsIntent customTabsIntent = builder.build();
+
+        mAuthorizationService.performAuthorizationRequest(authorizationRequest, authorizationIntent, customTabsIntent);
+    }
+
+    @Override
+    protected void onStart() {
+        Log.d(TAG, "Entering onStart ...");
+        super.onStart();
+        checkIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        checkIntent(intent);
+    }
+
+    private void checkIntent(@Nullable Intent intent) {
+
+        Log.d(TAG, "Entering checkIntent ...");
+        if (intent != null) {
+            String action = intent.getAction();
+            switch (action) {
+                case INTENT_ARTIKCLOUD_AUTHORIZATION_RESPONSE:
+                    Log.d(TAG, "checkIntent action = " + action
+                            + " intent.hasExtra(USED_INTENT) = " + intent.hasExtra(USED_INTENT));
+                    if (!intent.hasExtra(USED_INTENT)) {
+                        handleAuthorizationResponse(intent);
+                        intent.putExtra(USED_INTENT, true);
+                    }
+                    break;
+                default:
+                    Log.w(TAG, "checkIntent action = " + action);
+                    
+            }
+        } else {
+            Log.w(TAG, "checkIntent intent is null!");
+        }
+    }
+
+    private void handleAuthorizationResponse(@NonNull Intent intent) {
+        AuthorizationResponse response = AuthorizationResponse.fromIntent(intent);
+        AuthorizationException error = AuthorizationException.fromIntent(intent);
+        Log.i(TAG, "Entering handleAuthorizationResponse with response from Intent = " + response.jsonSerialize().toString());
+
+        if (response != null) {
+
+            if (response.authorizationCode != null ) { 
+
+                final AuthState authState = new AuthState(response, error);
+                Log.i(TAG, "Received code = " + response.authorizationCode + "\n make another call to get token ...");
+                
+                mAuthorizationService.performTokenRequest(response.createTokenExchangeRequest(), new AuthorizationService.TokenResponseCallback() {
+                    @Override
+                    public void onTokenRequestCompleted(@Nullable TokenResponse tokenResponse, @Nullable AuthorizationException exception) {
+                        if (tokenResponse != null) {
+                            authState.update(tokenResponse, exception);
+                            mAuthStateDAL.writeAuthState(authState); //store into persistent storage for use later
+                            String text = String.format("Received token response [%s]", tokenResponse.jsonSerializeString());
+                            Log.i(TAG, text);
+                            startMessageActivity();
+                        } else {
+                            Context context = getApplicationContext();
+                            Log.w(TAG, "Token Exchange failed", exception);
+                            CharSequence text = "Token Exchange failed";
+                            int duration = Toast.LENGTH_LONG;
+                            Toast toast = Toast.makeText(context, text, duration);
+                            toast.show();
+                        }
+                    }
+                });
+            } else { 
+                Log.d(TAG, "additionalParameter = " + response.additionalParameters.toString());
+
+                if (response.additionalParameters.get("status").equalsIgnoreCase("login_request")) {
+                    
+                    doAuth();
+                } else {
+                    Log.d(TAG, response.jsonSerialize().toString());
+                }
+            }
+
+        } else {
+            Log.w(TAG, "Authorization Response is null ");
+            Log.d(TAG, "Authorization Exception = " + error);
+        }
+    }
+
+    private void startMessageActivity() {
+        Intent msgActivityIntent = new Intent(this, MessageActivity.class);
+        startActivity(msgActivityIntent);
+    }
+
+}
