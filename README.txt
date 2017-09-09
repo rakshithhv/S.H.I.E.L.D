@@ -12,8 +12,4 @@
 
 7. The series of events is kept track by sending emails from the artik cloud to the Guardian of the patient by noting down the status of each devices.
 
-
- 
-
-
-
+8. A QnA using Microsoft Azure cognitive servicesto give Fcts about Alzheimer's Disease.
